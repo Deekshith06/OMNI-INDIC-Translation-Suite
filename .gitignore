@@ -1,0 +1,39 @@
+# Environments
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+omni_env/
+venv/
+env/
+.venv/
+
+# Next.js / Node
+node_modules/
+.next/
+out/
+build/
+.pnp.*
+.npm/
+
+# Mac
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+
+# Local data / Media
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.mp3
