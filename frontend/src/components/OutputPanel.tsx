@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import type { TranslationResult } from "@/types";
 import { generateTTS } from "@/lib/api";
+import RomanizedToggle, { RomanizedViewMode } from "./RomanizedToggle";
 
 interface OutputPanelProps {
   result: TranslationResult | null;
@@ -50,11 +51,18 @@ function ConfidenceMeter({ value }: { value: number }) {
 export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
   const [copied, setCopied] = useState(false);
   const [ttsLoading, setTtsLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<RomanizedViewMode>('native');
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleCopy = async () => {
     if (!result) return;
-    await navigator.clipboard.writeText(result.translated_text);
+    let textToCopy = result.translated_text;
+    if (viewMode === 'romanized' && result.romanized_text) {
+      textToCopy = result.romanized_text;
+    } else if (viewMode === 'both' && result.romanized_text) {
+      textToCopy = `${result.translated_text}\n\n${result.romanized_text}`;
+    }
+    await navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -81,7 +89,13 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
 
   const handleDownload = () => {
     if (!result) return;
-    const blob = new Blob([result.translated_text], { type: "text/plain;charset=utf-8" });
+    let textToDl = result.translated_text;
+    if (viewMode === 'romanized' && result.romanized_text) {
+      textToDl = result.romanized_text;
+    } else if (viewMode === 'both' && result.romanized_text) {
+      textToDl = `${result.translated_text}\n\n${result.romanized_text}`;
+    }
+    const blob = new Blob([textToDl], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = `translation_${result.target_language}.txt`; a.click();
@@ -239,6 +253,11 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
           }}>
             {result.mode}
           </span>
+          {result.romanized_text && (
+            <div className="ml-2">
+              <RomanizedToggle mode={viewMode} onChange={setViewMode} />
+            </div>
+          )}
         </div>
 
         {/* Action buttons */}
@@ -268,16 +287,36 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
       </div>
 
       {/* Translation text */}
-      <div style={{ flex: 1, padding: "22px", overflowY: "auto" }}>
-        <p style={{
-          fontSize: "1.125rem",
-          lineHeight: "1.85",
-          color: "var(--text-primary)",
-          fontWeight: 400,
-          letterSpacing: "0.005em",
-        }}>
-          {result.translated_text}
-        </p>
+      <div style={{ flex: 1, padding: "22px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+        {(viewMode === 'native' || viewMode === 'both') && (
+          <div>
+            {viewMode === 'both' && <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "4px" }}>Native Script</div>}
+            <p style={{
+              fontSize: "1.125rem",
+              lineHeight: "1.85",
+              color: "var(--text-primary)",
+              fontWeight: 400,
+              letterSpacing: "0.005em",
+            }}>
+              {result.translated_text}
+            </p>
+          </div>
+        )}
+        
+        {(viewMode === 'romanized' || viewMode === 'both') && result.romanized_text && (
+          <div>
+            {viewMode === 'both' && <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "4px" }}>Romanized Pronunciation</div>}
+            <p style={{
+              fontSize: "1.125rem",
+              lineHeight: "1.85",
+              color: "var(--accent-bright)",
+              fontWeight: 400,
+              letterSpacing: "0.01em",
+            }}>
+              {result.romanized_text}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Confidence + Source */}

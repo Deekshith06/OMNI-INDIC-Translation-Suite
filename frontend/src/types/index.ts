@@ -9,6 +9,7 @@ export interface Language {
 export interface TranslationResult {
   original_text: string;
   translated_text: string;
+  romanized_text?: string;
   target_language: string;
   mode: TranslationMode;
   confidence: number;

@@ -31,8 +31,9 @@ Furthermore, traditional translation apps require users to manually type out tex
   - **📄 PDF**: Extract and translate entire documents.
 - **Transliteration Toggle**: Instantly switch between translating meaning and transliterating script.
 - **Confidence Scores**: Visual green/red bars showing the confidence level of the translation.
+- **Post-Translation Romanization**: Generates human-readable English pronunciation for translated Indic text (e.g., "మీరు ఎలా ఉన్నారు" → "meeru ela unnaru") to help non-native readers.
 - **Text-to-Speech (TTS)**: Listen to translations in the target language's native accent.
-- **Warm Beige Corporate UI**: A polished, modern, and accessible user interface built with Next.js and Tailwind.
+- **Dark AI SaaS UI**: A polished, premium, and sleek dark mode user interface inspired by modern AI tools, built with Next.js and Tailwind.
 
 ---
 
@@ -41,7 +42,7 @@ Furthermore, traditional translation apps require users to manually type out tex
 ### Frontend
 - **Framework**: Next.js 16 (App Router), React
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS (Custom Warm Beige Theme)
+- **Styling**: Tailwind CSS (Premium Dark AI Theme)
 - **Voice API**: Web Speech API
 
 ### Backend
@@ -53,7 +54,8 @@ Furthermore, traditional translation apps require users to manually type out tex
 - **Core ML Framework**: PyTorch
 - **Transformers**: Hugging Face `transformers`
 - **Translation**: Meta's `facebook/nllb-200-distilled-600M`
-- **Transliteration**: AI4Bharat's `IndicXlit`
+- **Hybrid Transliteration**: AI4Bharat's `IndicXlit` + Phonetic Fallback
+- **Romanization**: Aksharamukha ISO mapping with Custom Phonetics
 - **OCR Engine**: `EasyOCR` (CRAFT + CRNN)
 - **Document Processing**: `PyMuPDF`
 - **Audio Generation**: `gTTS` (Google Text-to-Speech)
@@ -80,7 +82,7 @@ The application is built on a decoupled, full-stack architecture ensuring high p
 ```mermaid
 graph TD
     subgraph Frontend [Next.js Client]
-        UI[Beige UI Workspace]
+        UI[Dark AI Workspace]
         Text[Text Input]
         Voice[Web Speech API]
         Image[Image Upload]
@@ -107,7 +109,8 @@ graph TD
     Image -- "Multipart File" --> OCR
     PDF -- "Multipart File" --> Doc
     
-    Trans -- "Translated Text + Confidence" --> UI
+    Trans -- "Translated Text + Confidence" --> PostProc[Romanization Engine]
+    PostProc -- "Native + Romanized Text" --> UI
     Xlit -- "Transliterated Text" --> UI
 ```
 
@@ -125,6 +128,8 @@ Omni-Indic/
 │   ├── requirements.txt          # Python dependencies
 │   └── .env.example              # Environment variables template
 ├── ml_engine/                    # Machine Learning Inference Logic
+│   ├── advanced_translit/        # V3 Hybrid Transliteration Engine
+│   ├── romanization/             # Post-Translation Romanized Output Engine
 │   ├── translator.py             # NLLB-200 translation wrapper
 │   ├── transliterator.py         # IndicXlit transliteration wrapper
 │   ├── ocr_processor.py          # EasyOCR image OCR wrapper

@@ -31,6 +31,7 @@ class TranslationResponse(BaseModel):
     mode: str
     confidence: float
     extracted_text: Optional[str] = None
+    romanized_text: Optional[str] = None
 
 
 # ─── Demo translations for UI testing ────────────────────────────────
@@ -134,9 +135,17 @@ async def translate_text(request: Request, body: TextTranslateRequest):
         else:
             engine = request.app.state.translation_engine
             result = await run_in_threadpool(engine.translate, text, target_lang)
+            translated_text = result["translated_text"]
+            
+            # Post-Translation Romanization
+            from ml_engine.romanization.romanizer import RomanizerEngine
+            romanizer = RomanizerEngine()
+            romanized_text = await run_in_threadpool(romanizer.romanize, translated_text, target_lang)
+            
             return TranslationResponse(
                 original_text=text,
-                translated_text=result["translated_text"],
+                translated_text=translated_text,
+                romanized_text=romanized_text,
                 target_language=target_lang,
                 mode="translate",
                 confidence=result["confidence"],

@@ -276,7 +276,7 @@ body {
 .btn-icon {
   background: transparent;
   border: none;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 8px;
   border-radius: var(--radius-sm);
@@ -285,7 +285,7 @@ body {
   align-items: center;
   justify-content: center;
 }
-.btn-icon:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.btn-icon:hover { background: var(--bg-elevated); color: var(--accent-bright); }
 
 /* ═══════════════════════════════════════════════════════════════════════
    TEXTAREA
