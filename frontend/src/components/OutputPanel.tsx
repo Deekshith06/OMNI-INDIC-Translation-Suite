@@ -231,59 +231,63 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
         overflow: "hidden",
       }}
     >
-      {/* Header */}
+      {/* Header - 2 Row Professional Layout */}
       <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 18px",
+        display: "flex", flexDirection: "column", gap: "14px",
+        padding: "16px 20px 14px 20px",
         borderBottom: "1px solid var(--border-subtle)",
+        background: "var(--bg-card)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-            Translated Output
-          </span>
-          <span style={{
-            padding: "2px 8px",
-            borderRadius: "99px",
-            background: "var(--accent-muted)",
-            border: "1px solid var(--border-accent)",
-            fontSize: "0.7rem",
-            color: "var(--accent-bright)",
-            fontWeight: 600,
-            textTransform: "capitalize",
-          }}>
-            {result.mode}
-          </span>
-          {result.romanized_text && (
-            <div className="ml-2">
-              <RomanizedToggle mode={viewMode} onChange={setViewMode} />
-            </div>
-          )}
+        {/* ROW 1: Title & Actions */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--text-primary)", letterSpacing: "0.01em" }}>
+              Translated Output
+            </span>
+            <span style={{
+              padding: "2px 8px",
+              borderRadius: "99px",
+              background: "var(--accent-muted)",
+              border: "1px solid var(--border-accent)",
+              fontSize: "0.65rem",
+              color: "var(--accent-bright)",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.02em"
+            }}>
+              {result.mode}
+            </span>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            <button id="copy-btn" className="btn-icon" onClick={handleCopy} title="Copy translation" style={{ color: copied ? "var(--success)" : undefined }}>
+              {copied
+                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              }
+            </button>
+
+            <button id="listen-btn" className="btn-icon" onClick={handleListen} title="Listen to translation" style={{ color: ttsLoading ? "var(--accent-bright)" : undefined }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              </svg>
+            </button>
+
+            <button id="download-btn" className="btn-icon" onClick={handleDownload} title="Download as text">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
-        {/* Action buttons */}
-        <div style={{ display: "flex", gap: "4px" }}>
-          {/* Copy */}
-          <button id="copy-btn" className="btn-icon" onClick={handleCopy} title="Copy translation" style={{ color: copied ? "var(--success)" : undefined }}>
-            {copied
-              ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-            }
-          </button>
-
-          {/* Listen */}
-          <button id="listen-btn" className="btn-icon" onClick={handleListen} title="Listen to translation" style={{ color: ttsLoading ? "var(--accent-bright)" : undefined }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-            </svg>
-          </button>
-
-          {/* Download */}
-          <button id="download-btn" className="btn-icon" onClick={handleDownload} title="Download as text">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
-            </svg>
-          </button>
-        </div>
+        {/* ROW 2: Toggle */}
+        {result.romanized_text && (
+          <div style={{ width: "100%" }}>
+            <RomanizedToggle mode={viewMode} onChange={setViewMode} />
+          </div>
+        )}
       </div>
 
       {/* Translation text */}
