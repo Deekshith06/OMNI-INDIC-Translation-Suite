@@ -268,12 +268,6 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
               }
             </button>
 
-            <button id="listen-btn" className="btn-icon" onClick={handleListen} title="Listen to translation" style={{ color: ttsLoading ? "var(--accent-bright)" : undefined }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-              </svg>
-            </button>
-
             <button id="download-btn" className="btn-icon" onClick={handleDownload} title="Download as text">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
@@ -290,37 +284,83 @@ export default function OutputPanel({ result, isLoading }: OutputPanelProps) {
         )}
       </div>
 
-      {/* Translation text */}
-      <div style={{ flex: 1, padding: "22px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
-        {(viewMode === 'native' || viewMode === 'both') && (
-          <div>
-            {viewMode === 'both' && <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "4px" }}>Native Script</div>}
-            <p style={{
-              fontSize: "1.125rem",
-              lineHeight: "1.85",
-              color: "var(--text-primary)",
-              fontWeight: 400,
-              letterSpacing: "0.005em",
-            }}>
-              {result.translated_text}
-            </p>
-          </div>
-        )}
-        
-        {(viewMode === 'romanized' || viewMode === 'both') && result.romanized_text && (
-          <div>
-            {viewMode === 'both' && <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "4px" }}>Romanized Pronunciation</div>}
-            <p style={{
-              fontSize: "1.125rem",
-              lineHeight: "1.85",
-              color: "var(--accent-bright)",
-              fontWeight: 400,
-              letterSpacing: "0.01em",
-            }}>
-              {result.romanized_text}
-            </p>
-          </div>
-        )}
+      {/* Translation text Area */}
+      <div style={{ flex: 1, position: "relative", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, padding: "22px 22px 70px 22px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+          {(viewMode === 'native' || viewMode === 'both') && (
+            <div>
+              {viewMode === 'both' && <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "4px" }}>Native Script</div>}
+              <p style={{
+                fontSize: "1.125rem",
+                lineHeight: "1.85",
+                color: "var(--text-primary)",
+                fontWeight: 400,
+                letterSpacing: "0.005em",
+              }}>
+                {result.translated_text}
+              </p>
+            </div>
+          )}
+          
+          {(viewMode === 'romanized' || viewMode === 'both') && result.romanized_text && (
+            <div>
+              {viewMode === 'both' && <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "4px" }}>Romanized Pronunciation</div>}
+              <p style={{
+                fontSize: "1.125rem",
+                lineHeight: "1.85",
+                color: "var(--accent-bright)",
+                fontWeight: 400,
+                letterSpacing: "0.01em",
+              }}>
+                {result.romanized_text}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Floating Speaker Button */}
+        <div style={{ position: "absolute", bottom: "20px", right: "20px", zIndex: 10 }}>
+          <button 
+            id="listen-btn-floating" 
+            onClick={handleListen} 
+            title="Listen to translation" 
+            style={{ 
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: "48px", height: "48px", 
+              borderRadius: "50%", 
+              background: "var(--bg-elevated)", 
+              color: ttsLoading ? "var(--accent-bright)" : "var(--text-primary)",
+              border: "1px solid var(--border-accent)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--border-subtle)",
+              cursor: "pointer",
+              transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              transform: ttsLoading ? "scale(0.95)" : "scale(1)"
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "scale(1.08)";
+              e.currentTarget.style.background = "var(--accent-muted)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = ttsLoading ? "scale(0.95)" : "scale(1)";
+              e.currentTarget.style.background = "var(--bg-elevated)";
+            }}
+          >
+            <svg 
+              width="22" height="22" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              style={{ animation: ttsLoading ? "pulse-dot 1s infinite" : "none" }}
+            >
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Confidence + Source */}
