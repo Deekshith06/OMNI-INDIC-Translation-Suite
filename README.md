@@ -1,5 +1,14 @@
 # 🕉️ Omni-Indic Translation Suite
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Multimodal OCR](https://img.shields.io/badge/OCR-Tesseract%20%7C%20EasyOCR-blue.svg)]()
+[![Indic Languages](https://img.shields.io/badge/Languages-7%2B%20Indic%20Dialects-orange.svg)]()
+
+**Author:** Seelaboyina Deekshith ([@Deekshith06](https://github.com/Deekshith06))
+
 A comprehensive, multimodal translation and transliteration engine tailored for Indian languages. Built to bridge the communication gap, Omni-Indic supports text, voice, image OCR, and PDF inputs, seamlessly translating English/Tinglish to 7+ major Indian languages.
 
 ---
@@ -176,3 +185,12 @@ npm run dev
 ```
 
 Visit `http://localhost:3000` to access the suite.
+
+---
+
+## 👤 Author
+
+**Seelaboyina Deekshith**
+- GitHub: [@Deekshith06](https://github.com/Deekshith06)
+- Repository: [OMNI-INDIC-Translation-Suite](https://github.com/Deekshith06/OMNI-INDIC-Translation-Suite)
+
