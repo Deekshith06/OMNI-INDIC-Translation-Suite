@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 const HF_SPACE_URL = (
   process.env.HF_SPACE_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
   "https://deekshith55717-omni-indic-api.hf.space"
 ).replace(/\/$/, "");
 
