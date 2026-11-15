@@ -206,7 +206,8 @@ async def ready(request: Request):
     }
 
 
-@app.get("/", tags=["Health"])
+@app.get("/status", tags=["Health"])
+@app.get("/api/status", tags=["Health"])
 async def root():
     """Service status and meta info endpoint."""
     return {

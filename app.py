@@ -249,42 +249,10 @@ with gr.Blocks(title="Omni-Indic Translation Suite") as demo:
         """
     )
 
-# ── Attach FastAPI Endpoints to Gradio Application ───────────────────────────
-from api.routers import translate, tts
-from ml_engine.advanced_translit.transliteration_api import router as v3_translit_router
-from ml_engine.language_config import get_language_choices
-
-initial_count = len(demo.app.router.routes)
-
-demo.app.include_router(translate.router, prefix="/api")
-demo.app.include_router(tts.router, prefix="/api")
-demo.app.include_router(v3_translit_router, prefix="/api")
-
-@demo.app.get("/healthz")
-async def root_healthz():
-    return {"status": "ok", "service": "omni-indic", "version": "2.1.0"}
-
-@demo.app.get("/api/healthz")
-async def api_healthz():
-    return {"status": "ok", "service": "omni-indic", "version": "2.1.0"}
-
-@demo.app.get("/api/languages")
-async def api_languages():
-    return {"languages": get_language_choices()}
-
-# In-place slice assignment to place API routes ahead of Gradio's UI catch-all
-new_routes = demo.app.router.routes[initial_count:]
-demo.app.router.routes[:] = new_routes + demo.app.router.routes[:initial_count]
-
-# Inject initialized singletons into demo.app.state
-demo.app.state.translation_engine = translation_engine
-demo.app.state.transliteration_engine = transliteration_engine
-demo.app.state.romanizer_engine = romanizer_engine
-demo.app.state.ocr_processor = ocr_processor
-demo.app.state.pdf_processor = pdf_processor
-demo.app.state.demo_mode = False
-
-app = demo.app
+# ── Mount Gradio Web Interface onto FastAPI Application ────────────────────────
+app = gr.mount_gradio_app(fastapi_app, demo, path="/")
 
 if __name__ == "__main__":
-    demo.queue().launch(server_name="0.0.0.0", server_port=7860)
+    import uvicorn
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)
