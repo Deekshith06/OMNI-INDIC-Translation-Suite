@@ -1,6 +1,9 @@
 import logging
 from typing import List
-from ai4bharat.transliteration import XlitEngine
+try:
+    from ai4bharat.transliteration import XlitEngine
+except ImportError:
+    XlitEngine = None
 from .phonetic_mapper import PhoneticMapper
 from .config import DEFAULT_BEAM_WIDTH, RESCORE
 
@@ -16,6 +19,10 @@ class TransliterationEngineV3:
 
     def load(self):
         if self._loaded: return
+        if XlitEngine is None:
+            logger.warning("ai4bharat-transliteration not installed. Using PhoneticMapper fallback.")
+            self._loaded = False
+            return
         try:
             import torch
             import argparse

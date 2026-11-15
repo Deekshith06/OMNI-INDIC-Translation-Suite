@@ -11,6 +11,7 @@ export interface TranslationResult {
   translated_text: string;
   romanized_text?: string;
   target_language: string;
+  source_language?: string;
   mode: TranslationMode;
   confidence: number;
   extracted_text?: string;
@@ -24,6 +25,7 @@ export interface EngineStatus {
   transliteration_engine: boolean;
   ocr_processor: boolean;
   pdf_processor: boolean;
+  demo_mode?: boolean;
 }
 
 export interface TTSRequest {
@@ -34,5 +36,6 @@ export interface TTSRequest {
 export interface TextTranslateRequest {
   text: string;
   target_lang: string;
+  source_lang?: string;
   mode: TranslationMode;
 }

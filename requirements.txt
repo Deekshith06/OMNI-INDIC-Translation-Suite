@@ -1,0 +1,2 @@
+# Reference core API requirements
+-r api/requirements.txt

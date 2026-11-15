@@ -58,16 +58,16 @@ ARG BAKE_MODELS
 ENV HF_HUB_DISABLE_PROGRESS_BARS=1 \
     TRANSFORMERS_OFFLINE=0
 
-# Download IndicTrans2-200M weights into the HF cache
-# This adds ~820 MB to the image but enables fully offline inference
+# Download NLLB-200-distilled-600M weights into the HF cache
+# Enables fully offline, high-accuracy inference across Indian languages
 RUN if [ "$BAKE_MODELS" = "true" ]; then \
       python -c "\
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer; \
-model_id = 'ai4bharat/indictrans2-en-indic-dist-200M'; \
+model_id = 'facebook/nllb-200-distilled-600M'; \
 print('Downloading tokenizer...'); \
-AutoTokenizer.from_pretrained(model_id, trust_remote_code=True); \
+AutoTokenizer.from_pretrained(model_id); \
 print('Downloading model weights...'); \
-AutoModelForSeq2SeqLM.from_pretrained(model_id, trust_remote_code=True); \
+AutoModelForSeq2SeqLM.from_pretrained(model_id); \
 print('Download complete.')"; \
     fi
 
@@ -112,7 +112,7 @@ USER omniindic
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     DEMO_MODE=false \
-    TRANSLATION_MODEL=ai4bharat/indictrans2-en-indic-dist-200M \
+    TRANSLATION_MODEL=facebook/nllb-200-distilled-600M \
     QUANTIZE=int8 \
     HOST=0.0.0.0 \
     PORT=8000 \

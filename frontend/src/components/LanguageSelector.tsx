@@ -4,12 +4,14 @@ import React from "react";
 import type { Language } from "@/types";
 
 interface LanguageSelectorProps {
+  id?: string;
   value: string;
   onChange: (lang: string) => void;
   languages?: Language[];
 }
 
 const DEFAULT_LANGUAGES: Language[] = [
+  { key: "english",   label: "English",   script: "English"  },
   { key: "telugu",    label: "Telugu",    script: "తెలుగు"   },
   { key: "tamil",     label: "Tamil",     script: "தமிழ்"    },
   { key: "kannada",   label: "Kannada",   script: "ಕನ್ನಡ"  },
@@ -23,13 +25,13 @@ const DEFAULT_LANGUAGES: Language[] = [
   { key: "assamese",  label: "Assamese",  script: "অসমীয়া" },
 ];
 
-export default function LanguageSelector({ value, onChange, languages = DEFAULT_LANGUAGES }: LanguageSelectorProps) {
+export default function LanguageSelector({ id = "language-select", value, onChange, languages = DEFAULT_LANGUAGES }: LanguageSelectorProps) {
   const selected = languages.find(l => l.key === value);
 
   return (
     <div style={{ position: "relative" }}>
       <select
-        id="language-select"
+        id={id}
         className="lang-select"
         value={value}
         onChange={(e) => onChange(e.target.value)}

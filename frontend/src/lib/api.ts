@@ -10,17 +10,18 @@ import type {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
- * Translate text from English/Tinglish to an Indian language.
+ * Translate text from English/Tinglish to an Indian language or reverse.
  */
 export async function translateText(
   text: string,
   targetLang: string,
-  mode: TranslationMode = "translate"
+  mode: TranslationMode = "translate",
+  sourceLang: string = "english"
 ): Promise<TranslationResult> {
   const res = await fetch(`${API_BASE}/api/translate-text`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, target_lang: targetLang, mode }),
+    body: JSON.stringify({ text, target_lang: targetLang, source_lang: sourceLang, mode }),
   });
 
   if (!res.ok) {
@@ -37,11 +38,13 @@ export async function translateText(
 export async function translateDocument(
   file: File,
   targetLang: string,
-  mode: TranslationMode = "translate"
+  mode: TranslationMode = "translate",
+  sourceLang: string = "english"
 ): Promise<TranslationResult> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("target_lang", targetLang);
+  formData.append("source_lang", sourceLang);
   formData.append("mode", mode);
 
   const res = await fetch(`${API_BASE}/api/translate-doc`, {

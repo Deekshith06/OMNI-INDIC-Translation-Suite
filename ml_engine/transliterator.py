@@ -177,7 +177,7 @@ class TransliterationEngine:
         try:
             from aksharamukha import transliterate as aksh_translit  # type: ignore
             target_scheme = AKSHARAMUKHA_SCHEME.get(lang_code, "Devanagari")
-            return aksh_translit.process("HarvardKyoto", target_scheme, text)
+            return aksh_translit.process("ITRANS", target_scheme, text)
         except Exception as e:
             logger.error("Aksharamukha transliteration failed: %s", e)
             return text

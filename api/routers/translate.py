@@ -21,6 +21,7 @@ router = APIRouter()
 class TextTranslateRequest(BaseModel):
     text: str
     target_lang: str
+    source_lang: str = "english"
     mode: Literal["translate", "transliterate"] = "translate"
 
 
@@ -28,6 +29,7 @@ class TranslationResponse(BaseModel):
     original_text: str
     translated_text: str
     target_language: str
+    source_language: Optional[str] = "english"
     mode: str
     confidence: float
     extracted_text: Optional[str] = None
@@ -83,19 +85,50 @@ ALLOWED_TYPES = IMAGE_TYPES | PDF_TYPES
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
+def validate_magic_bytes(file_bytes: bytes, content_type: str) -> None:
+    """
+    Validate that uploaded file payload matches its declared MIME type via magic bytes
+    to protect against malicious uploads and MIME spoofing.
+    """
+    if len(file_bytes) < 4:
+        raise HTTPException(status_code=400, detail="Uploaded file is too small or corrupted.")
+
+    ctype = content_type.lower()
+    if ctype in ("image/jpeg", "image/jpg"):
+        if not file_bytes.startswith(b"\xff\xd8\xff"):
+            raise HTTPException(status_code=400, detail="Corrupted or invalid JPEG header.")
+    elif ctype == "image/png":
+        if not file_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise HTTPException(status_code=400, detail="Corrupted or invalid PNG header.")
+    elif ctype == "image/webp":
+        if not (file_bytes.startswith(b"RIFF") and len(file_bytes) > 12 and file_bytes[8:12] == b"WEBP"):
+            raise HTTPException(status_code=400, detail="Corrupted or invalid WebP header.")
+    elif ctype == "image/bmp":
+        if not file_bytes.startswith(b"BM"):
+            raise HTTPException(status_code=400, detail="Corrupted or invalid BMP header.")
+    elif ctype in ("image/tiff", "image/tif"):
+        if not (file_bytes.startswith(b"II*\x00") or file_bytes.startswith(b"MM\x00*")):
+            raise HTTPException(status_code=400, detail="Corrupted or invalid TIFF header.")
+    elif ctype == "application/pdf":
+        if not file_bytes.startswith(b"%PDF-"):
+            raise HTTPException(status_code=400, detail="Corrupted or invalid PDF header.")
+
+
 # ─── Text Translation ────────────────────────────────────────────────
 
 @router.post("/translate-text", response_model=TranslationResponse)
 async def translate_text(request: Request, body: TextTranslateRequest):
     """
-    Translate or transliterate English/Tinglish text to an Indian language.
+    Translate or transliterate text bidirectionally between English and Indian languages.
     """
     text = body.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Text cannot be empty.")
 
     target_lang = body.target_lang.lower()
+    source_lang = body.source_lang.lower()
     is_demo = getattr(request.app.state, "demo_mode", True)
+    romanizer = getattr(request.app.state, "romanizer_engine", None)
 
     try:
         if is_demo:
@@ -106,15 +139,29 @@ async def translate_text(request: Request, body: TextTranslateRequest):
                     original_text=text,
                     translated_text=demo_text,
                     target_language=target_lang,
+                    source_language=source_lang,
                     mode="transliterate",
                     confidence=0.92,
                 )
             else:
-                demo_text = DEMO_TRANSLATIONS.get(target_lang, f"[Demo translation of: {text}]")
+                if target_lang == "english":
+                    demo_text = f"This is a demo translation to English of: {text}"
+                else:
+                    demo_text = DEMO_TRANSLATIONS.get(target_lang, f"[Demo translation of: {text}]")
+
+                romanized_text = None
+                if romanizer and target_lang != "english":
+                    try:
+                        romanized_text = romanizer.romanize(demo_text, target_lang)
+                    except Exception as e:
+                        logger.warning(f"Demo romanization skipped: {e}")
+
                 return TranslationResponse(
                     original_text=text,
                     translated_text=demo_text,
                     target_language=target_lang,
+                    source_language=source_lang,
+                    romanized_text=romanized_text,
                     mode="translate",
                     confidence=0.87,
                 )
@@ -129,24 +176,26 @@ async def translate_text(request: Request, body: TextTranslateRequest):
                 original_text=text,
                 translated_text=transliterated,
                 target_language=target_lang,
+                source_language=source_lang,
                 mode="transliterate",
                 confidence=1.0,
             )
         else:
             engine = request.app.state.translation_engine
-            result = await run_in_threadpool(engine.translate, text, target_lang)
+            result = await run_in_threadpool(engine.translate, text, target_lang, source_lang)
             translated_text = result["translated_text"]
-            
-            # Post-Translation Romanization
-            from ml_engine.romanization.romanizer import RomanizerEngine
-            romanizer = RomanizerEngine()
-            romanized_text = await run_in_threadpool(romanizer.romanize, translated_text, target_lang)
-            
+
+            # Post-Translation Romanization via preloaded singleton
+            romanized_text = None
+            if romanizer and target_lang != "english":
+                romanized_text = await run_in_threadpool(romanizer.romanize, translated_text, target_lang)
+
             return TranslationResponse(
                 original_text=text,
                 translated_text=translated_text,
                 romanized_text=romanized_text,
                 target_language=target_lang,
+                source_language=source_lang,
                 mode="translate",
                 confidence=result["confidence"],
             )
@@ -167,10 +216,11 @@ async def translate_document(
     request: Request,
     file: UploadFile = File(...),
     target_lang: str = Form(...),
+    source_lang: str = Form("english"),
     mode: str = Form("translate"),
 ):
     """
-    Upload an image (OCR) or PDF and translate/transliterate its content.
+    Upload an image (OCR) or PDF and translate/transliterate its content with magic-byte safety.
     """
     content_type = file.content_type or ""
     if content_type not in ALLOWED_TYPES:
@@ -192,28 +242,46 @@ async def translate_document(
     if not file_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
+    # Cryptographic / magic byte header verification
+    validate_magic_bytes(file_bytes, content_type)
+
     target_lang = target_lang.lower()
+    source_lang = source_lang.lower()
     is_demo = getattr(request.app.state, "demo_mode", True)
+    romanizer = getattr(request.app.state, "romanizer_engine", None)
 
     try:
         if is_demo:
             # Demo mode
             extracted_text = "[Demo] Sample extracted text from your document. Connect Colab GPU backend for real OCR."
-            demo_text = DEMO_TRANSLATIONS.get(target_lang, f"[Demo translation]")
+            if target_lang == "english":
+                demo_text = f"This is a demo translation to English of document text."
+            else:
+                demo_text = DEMO_TRANSLATIONS.get(target_lang, f"[Demo translation]")
+
+            romanized_text = None
+            if romanizer and target_lang != "english":
+                try:
+                    romanized_text = romanizer.romanize(demo_text, target_lang)
+                except Exception as e:
+                    logger.warning(f"Demo romanization skipped: {e}")
+
             return TranslationResponse(
                 original_text=extracted_text,
                 translated_text=demo_text,
                 target_language=target_lang,
+                source_language=source_lang,
                 mode=mode,
                 confidence=0.85,
                 extracted_text=extracted_text,
+                romanized_text=romanized_text,
             )
 
         # Real mode — extract and translate
         if content_type in IMAGE_TYPES:
             ocr = request.app.state.ocr_processor
             extracted_text = await run_in_threadpool(
-                ocr.extract_text, file_bytes
+                ocr.extract_text, file_bytes, target_lang
             )
         elif content_type in PDF_TYPES:
             pdf = request.app.state.pdf_processor
@@ -235,21 +303,27 @@ async def translate_document(
                 xlit.transliterate, extracted_text, target_lang
             )
             confidence = 1.0
+            romanized_text = None
         else:
             translator = request.app.state.translation_engine
             result = await run_in_threadpool(
-                translator.translate, extracted_text, target_lang
+                translator.translate, extracted_text, target_lang, source_lang
             )
             translated_text = result["translated_text"]
             confidence = result["confidence"]
+            romanized_text = None
+            if romanizer and target_lang != "english":
+                romanized_text = await run_in_threadpool(romanizer.romanize, translated_text, target_lang)
 
         return TranslationResponse(
             original_text=extracted_text,
             translated_text=translated_text,
             target_language=target_lang,
+            source_language=source_lang,
             mode=mode,
             confidence=confidence,
             extracted_text=extracted_text,
+            romanized_text=romanized_text,
         )
 
     except HTTPException:

@@ -13,6 +13,14 @@ from typing import Optional
 
 
 LANGUAGES = {
+    # ── Source Language ───────────────────────────────────────────────
+    "english": {
+        "flores": "eng_Latn",
+        "gtts": "en",
+        "xlit": "en",
+        "label": "English",
+        "script": "English",
+    },
     # ── Original 7 languages ──────────────────────────────────────────
     "telugu": {
         "flores": "tel_Telu",

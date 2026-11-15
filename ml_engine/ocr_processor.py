@@ -12,6 +12,17 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+EASYOCR_LANG_MAP = {
+    "hindi": "hi",
+    "marathi": "mr",
+    "tamil": "ta",
+    "telugu": "te",
+    "kannada": "kn",
+    "bengali": "bn",
+    "english": "en",
+}
+
+
 class OCRProcessor:
     """
     Extracts text from images using EasyOCR.
@@ -24,43 +35,52 @@ class OCRProcessor:
 
     def __init__(self, languages: list[str] = None):
         self.languages = languages or ["en"]
+        self._readers: dict[tuple[str, ...], any] = {}
         self._reader = None
         self._loaded = False
 
     def load(self) -> None:
-        """Load EasyOCR reader. Call once at startup."""
-        if self._loaded:
-            logger.info("OCR reader already loaded.")
-            return
+        """Mark OCR processor ready (readers initialized on first OCR request)."""
+        self._loaded = True
+        logger.info("OCR processor ready (lazy initialization on first request).")
 
+    def _get_reader_for_lang(self, target_lang: Optional[str] = None):
+        """Get or initialize reader for specific language."""
+        if not self._loaded:
+            return None
+        ocr_lang = EASYOCR_LANG_MAP.get(target_lang.lower()) if target_lang else "en"
+        langs_tuple = tuple(sorted(set(["en", ocr_lang])))
+        if langs_tuple in self._readers:
+            return self._readers[langs_tuple]
         try:
             import easyocr
-
-            logger.info(f"Loading EasyOCR reader for languages: {self.languages}")
-            self._reader = easyocr.Reader(self.languages, gpu=False)
-            self._loaded = True
-            logger.info("OCR reader loaded successfully.")
-        except ImportError:
-            logger.error(
-                "easyocr not installed. Install with: pip install easyocr"
-            )
-            self._loaded = False
+            logger.info(f"Initializing EasyOCR reader for {langs_tuple}...")
+            reader = easyocr.Reader(list(langs_tuple), gpu=False)
+            self._readers[langs_tuple] = reader
+            if self._reader is None:
+                self._reader = reader
+            return reader
         except Exception as e:
-            logger.error(f"Failed to load OCR reader: {e}")
-            self._loaded = False
+            logger.warning(f"Failed to load reader for {langs_tuple}, falling back: {e}")
+            return self._reader
 
-    def extract_text(self, image_bytes: bytes) -> str:
+    def extract_text(self, image_bytes: bytes, target_lang: Optional[str] = None) -> str:
         """
         Extract text from an image.
 
         Args:
             image_bytes: Raw bytes of the image file.
+            target_lang: Optional language hint for OCR optimization.
 
         Returns:
             Extracted text as a single string with lines joined.
         """
-        if not self._loaded or self._reader is None:
+        if not self._loaded:
             raise RuntimeError("OCR reader not loaded. Call .load() first.")
+
+        reader = self._get_reader_for_lang(target_lang) or self._reader
+        if reader is None:
+            raise RuntimeError("OCR reader is unavailable.")
 
         try:
             # Convert bytes to numpy array

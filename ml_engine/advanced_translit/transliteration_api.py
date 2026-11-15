@@ -10,10 +10,6 @@ class TranslitRequest(BaseModel):
     text: str
     target_lang: str
 
-@router.on_event("startup")
-async def startup_event():
-    translit_engine_v3.load()
-
 @router.post("/process")
 async def transliterate_text(req: TranslitRequest):
     try:

@@ -33,9 +33,10 @@ class PDFProcessor:
             import fitz  # PyMuPDF
 
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            page_count = len(doc)
             text_parts = []
 
-            for page_num in range(len(doc)):
+            for page_num in range(page_count):
                 page = doc.load_page(page_num)
                 page_text = page.get_text("text")
                 if page_text.strip():
@@ -45,7 +46,7 @@ class PDFProcessor:
 
             full_text = "\n\n".join(text_parts)
             logger.info(
-                f"PDF extracted text from {len(doc)} pages "
+                f"PDF extracted text from {page_count} pages "
                 f"({len(full_text)} characters)."
             )
             return full_text

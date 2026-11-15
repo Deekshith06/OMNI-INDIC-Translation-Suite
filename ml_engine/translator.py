@@ -156,15 +156,25 @@ class TranslationEngine:
             self.model_name, self.device, precision.upper(),
         )
 
-        # NLLB-200 uses AutoTokenizer natively — no trust_remote_code needed
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        # Load tokenizer (prefer cached files to avoid network overhead)
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, local_files_only=True)
+        except Exception:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
 
         # Load in FP32 on CPU, FP16 on CUDA
         torch_dtype = torch.float16 if self.device == "cuda" else torch.float32
-        raw_model = AutoModelForSeq2SeqLM.from_pretrained(
-            self.model_name,
-            dtype=torch_dtype,
-        ).to(self.device)
+        try:
+            raw_model = AutoModelForSeq2SeqLM.from_pretrained(
+                self.model_name,
+                dtype=torch_dtype,
+                local_files_only=True,
+            ).to(self.device)
+        except Exception:
+            raw_model = AutoModelForSeq2SeqLM.from_pretrained(
+                self.model_name,
+                dtype=torch_dtype,
+            ).to(self.device)
         raw_model.eval()
 
         # Apply INT8 dynamic quantization on CPU (halves RAM, <5% BLEU loss)
@@ -193,15 +203,17 @@ class TranslationEngine:
         self,
         text: str,
         target_lang: str,
+        source_lang: str = "english",
         max_length: int = 256,
         num_beams: int = 4,
     ) -> dict:
         """
-        Translate English (or Tinglish) text to the specified Indian language.
+        Translate text between English and Indian languages (bidirectional).
 
         Args:
-            text:        Input text in English / code-mixed Roman script.
-            target_lang: Target language key (e.g., "telugu", "hindi").
+            text:        Input text in English, code-mixed, or Indic script.
+            target_lang: Target language key (e.g., "telugu", "hindi", "english").
+            source_lang: Source language key (default: "english").
             max_length:  Maximum output token length.
             num_beams:   Beam search width (4 ≈ +1.5 BLEU vs greedy, +40% latency).
 
@@ -210,26 +222,30 @@ class TranslationEngine:
 
         Raises:
             RuntimeError: If .load() was not called.
-            ValueError:   If target_lang is not in LANGUAGES.
+            ValueError:   If target_lang or source_lang is not in LANGUAGES.
         """
         if not self._loaded:
             raise RuntimeError("Model not loaded. Call .load() first.")
 
-        flores_code = get_flores_code(target_lang)
-        if not flores_code:
+        target_flores = get_flores_code(target_lang)
+        if not target_flores:
             raise ValueError(f"Unsupported target language: {target_lang}")
+
+        source_flores = get_flores_code(source_lang)
+        if not source_flores:
+            source_flores = SOURCE_LANG_FLORES
 
         text = _normalise_tinglish(text)
 
         # NLLB-200: set source language on the tokenizer
-        self.tokenizer.src_lang = SOURCE_LANG_FLORES
+        self.tokenizer.src_lang = source_flores
 
         sentences = self._split_sentences(text)
         if not sentences:
             return {
                 "translated_text": "",
                 "confidence": 0.0,
-                "source_lang": "English",
+                "source_lang": source_lang.capitalize(),
                 "target_lang": target_lang,
             }
 
@@ -246,7 +262,7 @@ class TranslationEngine:
             ).to(self.device)
 
             # NLLB-200: use convert_tokens_to_ids for forced BOS token
-            forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(flores_code)
+            forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(target_flores)
 
             with torch.no_grad():
                 output = self.model.generate(
@@ -274,15 +290,15 @@ class TranslationEngine:
         return {
             "translated_text": full_translation,
             "confidence": round(avg_confidence, 4),
-            "source_lang": "English",
+            "source_lang": source_lang.capitalize(),
             "target_lang": target_lang,
         }
 
     # ── Helpers ────────────────────────────────────────────────────────
 
     def _split_sentences(self, text: str) -> list[str]:
-        """Split text into sentences for better translation quality."""
-        sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+        """Split text into sentences for better translation quality (supports Indic Dandas)."""
+        sentences = re.split(r"(?<=[.!?\u0964\u0965])\s+", text.strip())
         return [s.strip() for s in sentences if s.strip()]
 
     def _compute_confidence(self, output) -> float:

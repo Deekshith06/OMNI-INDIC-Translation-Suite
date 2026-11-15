@@ -16,6 +16,7 @@ import OutputPanel from "@/components/OutputPanel";
 export default function Home() {
   // ── State ────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab]             = useState("translate");
+  const [sourceLang, setSourceLang]           = useState("english");
   const [targetLang, setTargetLang]           = useState("telugu");
   const [translationMode, setTranslationMode] = useState<TranslationMode>("translate");
   const [inputMode, setInputMode]             = useState<InputMode>("text");
@@ -41,10 +42,10 @@ export default function Home() {
     try {
       let response: TranslationResult;
       if (inputMode === "text") {
-        response = await translateText(text, targetLang, translationMode);
+        response = await translateText(text, targetLang, translationMode, sourceLang);
       } else {
         if (!file) throw new Error("No file selected.");
-        response = await translateDocument(file, targetLang, translationMode);
+        response = await translateDocument(file, targetLang, translationMode, sourceLang);
       }
       setResult(response);
     } catch (err) {
@@ -52,7 +53,21 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [inputMode, text, file, targetLang, translationMode]);
+  }, [inputMode, text, file, targetLang, sourceLang, translationMode]);
+
+  const handleSwapLanguages = useCallback(() => {
+    setSwapAnim(a => !a);
+    const prevSource = sourceLang;
+    const prevTarget = targetLang;
+    setSourceLang(prevTarget);
+    setTargetLang(prevSource);
+
+    // If there is an existing translation, swap texts into the input box
+    if (result?.translated_text) {
+      setText(result.translated_text);
+      setResult(null);
+    }
+  }, [sourceLang, targetLang, result]);
 
   const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab);
@@ -110,30 +125,20 @@ export default function Home() {
 
           {/* Language swap bar */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
-            {/* Source — always English */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              padding: "7px 14px",
-              background: "var(--bg-elevated)",
-              border: "1px solid var(--border-primary)",
-              borderRadius: "var(--radius-md)",
-              minWidth: "120px",
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-              </svg>
-              <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)" }}>English</span>
-            </div>
+            {/* Source language */}
+            <LanguageSelector
+              id="source-language-select"
+              value={sourceLang}
+              onChange={setSourceLang}
+              languages={languages}
+            />
 
             {/* Swap button */}
             <button
-              className="swap-btn"
+              className={`swap-btn ${swapAnim ? "rotated" : ""}`}
               id="swap-lang-btn"
               title="Swap languages"
-              onClick={() => {
-                setSwapAnim(a => !a);
-                // Future: swap source/target if bidirectional
-              }}
+              onClick={handleSwapLanguages}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m17 4 4 4-4 4"/><path d="M3 8h18"/><path d="m7 20-4-4 4-4"/><path d="M21 16H3"/>
@@ -141,7 +146,12 @@ export default function Home() {
             </button>
 
             {/* Target language */}
-            <LanguageSelector value={targetLang} onChange={setTargetLang} languages={languages} />
+            <LanguageSelector
+              id="target-language-select"
+              value={targetLang}
+              onChange={setTargetLang}
+              languages={languages}
+            />
           </div>
 
           {/* Mode toggle */}

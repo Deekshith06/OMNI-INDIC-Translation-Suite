@@ -64,8 +64,19 @@ async def generate_tts(body: TTSRequest):
             status_code=503,
             detail="TTS service unavailable. gTTS not installed.",
         )
+    except (ConnectionError, TimeoutError) as e:
+        logger.warning(f"TTS network unreachable: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="TTS upstream service temporarily unreachable.",
+        )
     except Exception as e:
         logger.error(f"TTS generation failed: {e}", exc_info=True)
+        if "connect" in str(e).lower() or "connection" in str(e).lower() or "socket" in str(e).lower():
+            raise HTTPException(
+                status_code=503,
+                detail="TTS upstream service temporarily unreachable.",
+            )
         raise HTTPException(
             status_code=500,
             detail="Failed to generate audio. Please try again.",

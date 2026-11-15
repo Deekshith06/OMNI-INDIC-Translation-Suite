@@ -20,9 +20,9 @@ sacremoses>=0.1.1,<0.2.0        # Required by some tokenizers (NLLB fallback)
 accelerate>=0.29.0,<0.35.0      # Enables device_map= for large models
 
 # ── Indic NLP ─────────────────────────────────────────────────────────────────
-# Primary transliteration engine (neural, AI4Bharat)
-# Install separately if pip fails: pip install ai4bharat-transliteration
-ai4bharat-transliteration>=1.1.0
+# Primary transliteration engine (neural, AI4Bharat - optional, requires fairseq)
+# Install separately if needed: pip install ai4bharat-transliteration
+# ai4bharat-transliteration>=1.1.0
 
 # Rule-based transliteration fallback (offline, zero-RAM)
 aksharamukha>=2.1.0
