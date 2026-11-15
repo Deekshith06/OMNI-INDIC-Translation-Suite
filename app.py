@@ -2,9 +2,23 @@
 Omni-Indic Translation Suite — Hugging Face Spaces Deployment
 ==============================================================
 Dual-Mode Server:
-1. Gradio Web Interface (for direct browser use on Hugging Face)
+1. Gradio Web Interface (for direct browser use on Hugging Face Spaces)
 2. FastAPI REST API (mounted at /api for Next.js frontend on Vercel)
 """
+
+# IMPORTANT: spaces must be imported at the very top for Hugging Face ZeroGPU
+try:
+    import spaces
+except ImportError:
+    class _MockSpaces:
+        @staticmethod
+        def GPU(fn=None, duration=None):
+            if fn is not None and callable(fn):
+                return fn
+            def decorator(func):
+                return func
+            return decorator
+    spaces = _MockSpaces()
 
 import io
 import os
@@ -73,20 +87,9 @@ LANG_CHOICES = [
 ]
 
 
-# ── ZeroGPU / Hardware Optimization ───────────────────────────────────────────
-try:
-    import spaces  # Available on Hugging Face ZeroGPU
-    gpu_fn = spaces.GPU(duration=60)
-except Exception:
-    # Graceful fallback on CPU basic or local environment
-    def gpu_fn(fn):
-        return fn
+# ── Internal Core Processing (Undecorated to avoid nesting) ───────────────────
 
-
-# ── Gradio Handlers ────────────────────────────────────────────────────────────
-
-@gpu_fn
-def process_text(text: str, source_lang: str, target_lang: str, mode: str):
+def _run_translation_core(text: str, source_lang: str, target_lang: str, mode: str):
     if not text or not text.strip():
         return "", "", "0.00", None
 
@@ -118,7 +121,14 @@ def process_text(text: str, source_lang: str, target_lang: str, mode: str):
     return translated, romanized, confidence_str, audio_path
 
 
-@gpu_fn
+# ── Gradio Handlers (Decorated with @spaces.GPU for ZeroGPU dynamic hardware) ──
+
+@spaces.GPU(duration=60)
+def process_text(text: str, source_lang: str, target_lang: str, mode: str):
+    return _run_translation_core(text, source_lang, target_lang, mode)
+
+
+@spaces.GPU(duration=60)
 def process_document(file, source_lang: str, target_lang: str, mode: str):
     if file is None:
         return "No file uploaded.", "", "", None
@@ -138,7 +148,7 @@ def process_document(file, source_lang: str, target_lang: str, mode: str):
         if not extracted_text.strip():
             return "No readable text found in document.", "", "", None
 
-        translated, romanized, conf, audio = process_text(
+        translated, romanized, conf, audio = _run_translation_core(
             extracted_text, source_lang, target_lang, mode
         )
         return translated, romanized, extracted_text, audio
@@ -239,10 +249,14 @@ with gr.Blocks(title="Omni-Indic Translation Suite") as demo:
         """
     )
 
-# Mount Gradio onto the existing FastAPI application
-app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+# Mount FastAPI onto Gradio's internal FastAPI app
+demo.app.mount("/api", fastapi_app)
+
+@demo.app.get("/healthz")
+def root_healthz():
+    return {"status": "ok", "service": "omni-indic", "version": "2.1.0"}
+
+app = demo.app
 
 if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 7860))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    demo.queue().launch(server_name="0.0.0.0", server_port=7860)
