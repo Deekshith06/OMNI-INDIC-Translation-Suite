@@ -252,6 +252,10 @@ class TranslationEngine:
         translated_parts: list[str] = []
         confidence_scores: list[float] = []
 
+        device = "cuda" if torch.cuda.is_available() else self.device
+        if self.model is not None and next(self.model.parameters()).device.type != device:
+            self.model.to(device)
+
         for sentence in sentences:
             inputs = self.tokenizer(
                 sentence,
@@ -259,7 +263,7 @@ class TranslationEngine:
                 truncation=True,
                 max_length=MAX_INPUT_TOKENS,
                 padding=True,
-            ).to(self.device)
+            ).to(device)
 
             # NLLB-200: use convert_tokens_to_ids for forced BOS token
             forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(target_flores)

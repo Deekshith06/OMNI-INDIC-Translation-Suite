@@ -73,8 +73,19 @@ LANG_CHOICES = [
 ]
 
 
+# ── ZeroGPU / Hardware Optimization ───────────────────────────────────────────
+try:
+    import spaces  # Available on Hugging Face ZeroGPU
+    gpu_fn = spaces.GPU(duration=60)
+except Exception:
+    # Graceful fallback on CPU basic or local environment
+    def gpu_fn(fn):
+        return fn
+
+
 # ── Gradio Handlers ────────────────────────────────────────────────────────────
 
+@gpu_fn
 def process_text(text: str, source_lang: str, target_lang: str, mode: str):
     if not text or not text.strip():
         return "", "", "0.00", None
@@ -107,6 +118,7 @@ def process_text(text: str, source_lang: str, target_lang: str, mode: str):
     return translated, romanized, confidence_str, audio_path
 
 
+@gpu_fn
 def process_document(file, source_lang: str, target_lang: str, mode: str):
     if file is None:
         return "No file uploaded.", "", "", None
