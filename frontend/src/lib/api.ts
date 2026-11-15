@@ -8,6 +8,15 @@ import type {
 } from "@/types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://deekshith55717-omni-indic-api.hf.space").replace(/\/$/, "");
+const HF_TOKEN = process.env.NEXT_PUBLIC_HF_TOKEN || "";
+
+function getAuthHeaders(): HeadersInit {
+  const headers: Record<string, string> = {};
+  if (HF_TOKEN) {
+    headers["Authorization"] = `Bearer ${HF_TOKEN}`;
+  }
+  return headers;
+}
 
 const FALLBACK_LANGUAGES: Language[] = [
   { key: "english", label: "English", script: "Latin" },
@@ -36,7 +45,7 @@ async function translateViaHFSpace(
   const gradioMode = mode === "transliterate" ? "Transliterate" : "Translate";
   const postRes = await fetch(`${API_BASE}/gradio_api/call/process_text`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ data: [text, sourceLang, targetLang, gradioMode] }),
   });
 
@@ -45,7 +54,9 @@ async function translateViaHFSpace(
   }
 
   const { event_id } = await postRes.json();
-  const getRes = await fetch(`${API_BASE}/gradio_api/call/process_text/${event_id}`);
+  const getRes = await fetch(`${API_BASE}/gradio_api/call/process_text/${event_id}`, {
+    headers: getAuthHeaders(),
+  });
   const sseText = await getRes.text();
   const dataLine = sseText.split("\n").find((l) => l.startsWith("data: "));
   if (!dataLine) {
@@ -82,6 +93,7 @@ async function translateDocumentViaHFSpace(
 
   const uploadRes = await fetch(`${API_BASE}/gradio_api/upload`, {
     method: "POST",
+    headers: getAuthHeaders(),
     body: formData,
   });
 
@@ -94,7 +106,7 @@ async function translateDocumentViaHFSpace(
 
   const postRes = await fetch(`${API_BASE}/gradio_api/call/process_document`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     body: JSON.stringify({
       data: [
         { path: filePath, meta: { _type: "gradio.FileData" } },
@@ -110,7 +122,9 @@ async function translateDocumentViaHFSpace(
   }
 
   const { event_id } = await postRes.json();
-  const getRes = await fetch(`${API_BASE}/gradio_api/call/process_document/${event_id}`);
+  const getRes = await fetch(`${API_BASE}/gradio_api/call/process_document/${event_id}`, {
+    headers: getAuthHeaders(),
+  });
   const sseText = await getRes.text();
   const dataLine = sseText.split("\n").find((l) => l.startsWith("data: "));
   if (!dataLine) {
