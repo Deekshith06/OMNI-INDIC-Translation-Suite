@@ -1,2 +1,33 @@
-# Reference core API requirements
--r api/requirements.txt
+# ==============================================================================
+# Omni-Indic Translation Suite — Hugging Face Spaces & Production Dependencies
+# ==============================================================================
+
+# ── Web Framework ─────────────────────────────────────────────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+python-dotenv>=1.0.0
+gradio>=5.0.0
+
+# ── ML & Neural Models ────────────────────────────────────────────────────────
+torch>=2.2.0
+torchvision>=0.18.0
+transformers>=4.40.0
+sentencepiece>=0.2.0
+sacremoses>=0.1.1
+accelerate>=0.29.0
+
+# ── Indic NLP & Transliteration ───────────────────────────────────────────────
+aksharamukha>=2.1.0
+
+# ── Multimodal (OCR & PDF) ────────────────────────────────────────────────────
+easyocr>=1.7.1
+opencv-python-headless>=4.9.0
+Pillow>=10.0.0
+PyMuPDF>=1.24.0
+
+# ── Audio (TTS) & Utilities ───────────────────────────────────────────────────
+gTTS>=2.5.1
+psutil>=5.9.0
+requests>=2.31.0
+numpy>=1.26.0

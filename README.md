@@ -1,3 +1,16 @@
+---
+title: Omni Indic Api
+emoji: 🕉️
+colorFrom: green
+colorTo: blue
+sdk: gradio
+sdk_version: 6.32.0
+python_version: '3.12'
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # 🕉️ Omni-Indic Translation Suite
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
